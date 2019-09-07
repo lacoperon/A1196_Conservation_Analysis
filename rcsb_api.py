@@ -11,6 +11,8 @@ import pandas as pd
 from lxml import etree
 from io import StringIO
 
+
+
 # Alter this, based on the docs for the RCSB RESTful API described
 # here: https://www.rcsb.org/pdb/software/rest.do, to search for other things
 queryText = """
@@ -18,7 +20,7 @@ queryText = """
 <queryType>org.pdb.query.simple.StructTitleQuery</queryType>
 <description>StructTitleQuery: struct.title.comparator=contains struct.title.value=ribosome</description>
 <struct.title.comparator>contains</struct.title.comparator>
-<struct.title.value>ribosome</struct.title.value>
+<struct.title.value>%TITLE</struct.title.value>
 </orgPdbQuery>
 """
 
@@ -26,14 +28,22 @@ queryText = """
 This function takes in a correctly formatted XML query to the RCSB Search API,
 and returns the resulting PDB IDs received from said API in the response
 Input:
-    queryText : string  -- the XML query to be sent to the API
+    queryTitle: ?string  -- the title of PDB to search
+    queryText : ?string -- the XML query to be sent to the API
     url       : ?string -- the URL the query should be POSTed to
     verbose   : ?bool   -- Flag for verbose output from function
 Output:
     pdb id list : string list -- a list of PDB IDs returned from the API
 '''
-def query_for_pdb_ids(queryText=queryText, url="http://www.rcsb.org/pdb/rest/search",
+
+def query_for_pdb_ids(
+    queryTitle="",
+    queryText=queryText,
+    url="http://www.rcsb.org/pdb/rest/search",
     verbose=False):
+    
+    if queryTitle:
+        queryText = queryText.replace("%TITLE", queryTitle)
 
     if verbose:
         print("query:\n", queryText)
@@ -160,12 +170,12 @@ def describe_chains(pdb_id, url="https://www.rcsb.org/pdb/rest/describeMol"):
         "Description":chain_descriptions
     })
 
-    # Sorts DataFrame, and joins with FASTA-derived sequence data
-    chain_df.sort_values("ID")
-    fasta_df = get_fasta_seqs(pdb_id)
-    result_df = chain_df.set_index('ID').join(fasta_df.set_index('ID'))
+#     # Sorts DataFrame, and joins with FASTA-derived sequence data
+#     chain_df.sort_values("ID")
+#     fasta_df = get_fasta_seqs(pdb_id)
+#     result_df = chain_df.set_index('ID').join(fasta_df.set_index('ID'))
 
-    return result_df
+    return chain_df
 
 '''
 This function gets a DataFrame representation of FASTA sequences obtained from
