@@ -111,10 +111,12 @@ description, and sequence) from the RCSB API given a particular PDB Accession ID
 Input:
     pdb_id : string  -- PDB Accession ID to look up
     url    : ?string -- URL of RCSB API to query
+    get_fasta : bool -- Whether or not to fetch the FASTA sequences
 Output:
     result_df : DataFrame -- pandas DataFrame with chain descriptors
 '''
-def describe_chains(pdb_id, url="https://www.rcsb.org/pdb/rest/describeMol"):
+def describe_chains(pdb_id, url="https://www.rcsb.org/pdb/rest/describeMol",
+                    get_fasta=False):
     # Formats the URL as required by the API definition
     req_url = url + "?structureId={}".format(pdb_id)
     req_url += "&format=csv&service=wsfile"
@@ -170,13 +172,14 @@ def describe_chains(pdb_id, url="https://www.rcsb.org/pdb/rest/describeMol"):
         "Description":chain_descriptions
     })
 
-#     # Sorts DataFrame, and joins with FASTA-derived sequence data
-#     chain_df.sort_values("ID")
-#     fasta_df = get_fasta_seqs(pdb_id)
-#     result_df = chain_df.set_index('ID').join(fasta_df.set_index('ID'))
-
-    return chain_df
-
+    if get_fasta:
+        # Sorts DataFrame, and joins with FASTA-derived sequence data
+        chain_df.sort_values("ID")
+        fasta_df = get_fasta_seqs(pdb_id).sort_values("ID")
+        result_df = chain_df.set_index('ID').join(fasta_df.set_index('ID'), how="left")
+        return result_df
+    else:
+        return chain_df
 '''
 This function gets a DataFrame representation of FASTA sequences obtained from
 the RCSB API for a particular PDB ID, where sequences are separated by chain
